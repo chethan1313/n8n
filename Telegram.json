@@ -1,0 +1,534 @@
+{
+  "name": "Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -80,
+        -140
+      ],
+      "id": "8ae26036-8720-45ca-81d4-78d23e7c9541",
+      "name": "Telegram Trigger",
+      "webhookId": "bbc941ca-1ce4-4a37-b7e2-70de4b59793f",
+      "credentials": {
+        "telegramApi": {
+          "id": "AVZiNAn7yDVDiru1",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }} You are an AI agent integrated with powerful search tools. For every incoming query, if only the query is provided only with id then first attempt to retrieve an answer using the tool snowflake. else if the any questions related to the patient details fetch using snowflake. any operation related the account creation use the salesforce tool. If the tools provide a valid response, return that information to the user. However, if no relevant results are found or if the tool query fails, then seamlessly switch to using the chat modal to generate a comprehensive answer. Always prioritize tool-based responses, but ensure a complete and helpful reply by falling back to the chat modal when needed.\n",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        1360,
+        -600
+      ],
+      "id": "c37dedd5-bb5b-4f37-b70b-7765799062d1",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1260,
+        -340
+      ],
+      "id": "a8904a3c-02cb-4d33-aa72-04f42161e282",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "84VJ7LXzl2AjrMiM",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2000,
+        -560
+      ],
+      "id": "f73f2144-81c1-42c3-b5b5-34ede7c653de",
+      "name": "Telegram",
+      "webhookId": "f5d5d3f8-4b08-43d3-bfc7-0287ef8b8c77",
+      "credentials": {
+        "telegramApi": {
+          "id": "AVZiNAn7yDVDiru1",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "8cbb657e-a58b-4bb8-85b3-3a6f69ce3dd4"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c0d72019-567f-447e-bdef-393a175d1d98",
+                    "leftValue": "={{ $json.message.audio.mime_type }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Voice"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "90a09b9c-0791-4d0d-85ba-879590fe5d3d",
+                    "leftValue": "={{ $json.message.photo[3].file_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Image"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        340,
+        -140
+      ],
+      "id": "10cbac02-c33a-4268-86e1-e46034aa52bc",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CALL SEARCH_TEXT_PROC('{{ $('Telegram Trigger').item.json.message.text }}');"
+      },
+      "type": "n8n-nodes-base.snowflakeTool",
+      "typeVersion": 1,
+      "position": [
+        1840,
+        20
+      ],
+      "id": "938e4b59-93d8-43c6-afa5-c3296a178982",
+      "name": "Snowflake",
+      "credentials": {
+        "snowflake": {
+          "id": "dMEeO6dYeE7NTDxC",
+          "name": "Snowflake account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://lazy-hairs-lick.loca.lt/ask",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "question",
+              "value": "What is the patient name?"
+            },
+            {
+              "name": "model_name",
+              "value": "mistral-large2"
+            },
+            {
+              "name": "category_value",
+              "value": "ALL"
+            },
+            {
+              "name": "use_context",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        120,
+        -20
+      ],
+      "id": "d7c58690-8eec-4cb1-8d65-f0510b57dd04",
+      "name": "HTTP Request",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.audio.file_id }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        740,
+        -140
+      ],
+      "id": "8728557b-b878-4d3a-a509-922cbee10ae6",
+      "name": "Telegram1",
+      "webhookId": "88a2ca1a-9913-43b9-9397-ec394c0fed8b",
+      "credentials": {
+        "telegramApi": {
+          "id": "AVZiNAn7yDVDiru1",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        940,
+        -140
+      ],
+      "id": "6e3dd677-49c8-4b9c-8b43-63c44103c84c",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "tj1IVwQWko60mtQB",
+          "name": "OpenAi account 2"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.message_id }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1400,
+        -340
+      ],
+      "id": "48986549-194f-4039-a371-8982bf456589",
+      "name": "Simple Memory",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Consume Salesforce APi i want to create with the name provided just the name.",
+        "resource": "account",
+        "name": "={{ $('Telegram Trigger').item.json.message.text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.salesforceTool",
+      "typeVersion": 1,
+      "position": [
+        2100,
+        40
+      ],
+      "id": "032fe9e3-4438-4206-8a0f-6fd9eb29c3a2",
+      "name": "Salesforce",
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "m7jmPkYeIJKHSXAr",
+          "name": "Salesforce account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "flow",
+        "apiName": "Create_Check_in_Guest_Event",
+        "variablesUi": {
+          "variablesValues": [
+            {
+              "name": "Question",
+              "value": "={{ $('Telegram Trigger').item.json.message.text }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.salesforceTool",
+      "typeVersion": 1,
+      "position": [
+        1700,
+        20
+      ],
+      "id": "e780b294-9359-4982-a694-6672117d7799",
+      "name": "Salesforce1",
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "m7jmPkYeIJKHSXAr",
+          "name": "Salesforce account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "get the patient name,id,address,contact details from the data",
+        "url": "=https://epic-patient-data-b8xpqb.5sc6y6-4.usa-e2.cloudhub.io/fhir/{{ $('Switch').item.json.message.text }}",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {
+              "name": "client_id",
+              "valueProvider": "fieldValue",
+              "value": "7a5437f73a004cc2816ffd106d4aeedc"
+            },
+            {
+              "name": "client_secret",
+              "valueProvider": "fieldValue",
+              "value": "42EC1ee4F2a9401F98af7e1375564A96"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        1540,
+        40
+      ],
+      "id": "4b14fc55-36cc-44f9-b5e9-83cfa2a4ab15",
+      "name": "EPIC"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Snowflake": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram1": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salesforce": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salesforce1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EPIC": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e9a51185-ef76-4a05-9285-7ac65ab9b929",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dd98a6e9c4d6d6637c592f7b142c200f96537e89aebdd6b513bee838551cea65"
+  },
+  "id": "W7bkEmxK6oouqN7H",
+  "tags": []
+}
