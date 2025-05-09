@@ -1,0 +1,217 @@
+{
+  "name": "gmail analyzer",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        140,
+        20
+      ],
+      "id": "7584e53f-8aa8-4f25-b015-420f0db55f68",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "yEh2CG6cJ2hZkKQ2",
+          "name": "Gmail account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "get the response from the http response tool and  give only the complaints and tags seperately",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        440,
+        0
+      ],
+      "id": "cef21ef9-2d42-4e0c-b489-3324248f8ef0",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "toolDescription": "get all the details from the response",
+        "method": "POST",
+        "url": "https://6895-2401-4900-8813-f972-6533-358a-a704-f147.ngrok-free.app/submit_complaints",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"complaints\": [\n    \"{{ $json.snippet }}\"\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        640,
+        220
+      ],
+      "id": "bcaf1edc-5bc5-413d-88c5-8203357ad8ff",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        420,
+        220
+      ],
+      "id": "2e68fb77-ef6b-4311-ba2a-1fe0ff7e28e9",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "dHJpwysr6ai8g4fK",
+          "name": "Groq account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://6895-2401-4900-8813-f972-6533-358a-a704-f147.ngrok-free.app/submit_complaints",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"complaints\": [\n    \"The bill amount of my credit card was debited twice.\"\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        60,
+        240
+      ],
+      "id": "2a5ed266-14ee-4221-9cdf-d7477c202b09",
+      "name": "HTTP Request1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "resource": "case",
+        "type": "General",
+        "additionalFields": {
+          "customFieldsUi": {
+            "customFieldsValues": [
+              {
+                "fieldId": "Service_Department__c",
+                "value": "={{ $json.tags }}"
+              }
+            ]
+          },
+          "description": "={{ $json.complaint }}",
+          "subject": "={{ $('Gmail Trigger').item.json.Subject }} Raised On {{ new Date().toLocaleString() }}\n"
+        }
+      },
+      "type": "n8n-nodes-base.salesforce",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        100
+      ],
+      "id": "6eef5b44-fc93-4f23-bf2b-fcd15df95c4b",
+      "name": "Salesforce1",
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "m7jmPkYeIJKHSXAr",
+          "name": "Salesforce account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1) Grab the raw string\nconst raw = $input.first().json.output;\n\n// 2) Normalize any “\\n” escapes into real newlines\nconst normalized = raw.replace(/\\\\n/g, '\\n');\n\n// 3) Split on actual newline (handles CRLF or LF)\nconst [complaintsLine = '', tagsLine = ''] = normalized.split(/\\r?\\n/);\n\n// 4) Strip off the labels and trim\nconst complaint = complaintsLine.replace(/^Complaints:\\s*/i, '').trim();\nconst tags      = tagsLine      .replace(/^Tags:\\s*/i,       '').trim();\n\n// 5) Emit as separate JSON fields\nreturn [\n  {\n    json: {\n      complaint,\n      tags,\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        0
+      ],
+      "id": "32a23672-1d2a-4901-9a0f-466246c6718a",
+      "name": "Code"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Salesforce1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "551edade-aead-45e8-817a-896e06703aea",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dd98a6e9c4d6d6637c592f7b142c200f96537e89aebdd6b513bee838551cea65"
+  },
+  "id": "GVwnGO0YqBcuih76",
+  "tags": []
+}
