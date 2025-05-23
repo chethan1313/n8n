@@ -1,0 +1,354 @@
+{
+  "name": "DATA VIRTUALIZATION",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "retrieve quantity from snowflake and return back the what ever the first execution returns exact response from the tool ",
+        "options": {
+          "passthroughBinaryImages": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        560,
+        -20
+      ],
+      "id": "81da1e72-bae1-4e07-aa1a-9fbab1df7d7e",
+      "name": "AI Agent",
+      "retryOnFail": false,
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "contextWindowLength": 1
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        680,
+        200
+      ],
+      "id": "fd1618a3-9cb2-4e3a-84f5-fe3396a4b4d8",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "execute once return data from first execution",
+        "operation": "executeQuery",
+        "query": "CALL GET_SQL_FROM_QUESTION_pin(\n  '{{ $('Telegram Trigger').item.json.message.text }}\" party_identification_id\": \"{{ $json.GET_SQL_FROM_QUESTION }}\n'\n);"
+      },
+      "type": "n8n-nodes-base.snowflakeTool",
+      "typeVersion": 1,
+      "position": [
+        800,
+        180
+      ],
+      "id": "d319c2aa-50d4-4389-9b6c-8b55024efeaf",
+      "name": "Snowflake1",
+      "credentials": {
+        "snowflake": {
+          "id": "nOe9keYDYLWfwaOH",
+          "name": "DREMIO"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CALL GET_SQL_FROM_QUESTION(\n  '{{ $json.message.text }}');"
+      },
+      "type": "n8n-nodes-base.snowflake",
+      "typeVersion": 1,
+      "position": [
+        400,
+        0
+      ],
+      "id": "1f2c4a5d-d3c6-4a5e-84c4-1c2e168a6293",
+      "name": "Snowflake2",
+      "credentials": {
+        "snowflake": {
+          "id": "nOe9keYDYLWfwaOH",
+          "name": "DREMIO"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        920,
+        -20
+      ],
+      "id": "d12db496-9d88-44d8-b9fb-5498f00e113b",
+      "name": "Telegram",
+      "webhookId": "22347d0b-9804-49e1-b722-b2825c027e88",
+      "credentials": {
+        "telegramApi": {
+          "id": "AVZiNAn7yDVDiru1",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        560,
+        160
+      ],
+      "id": "120a5bf8-bbb3-4099-8d85-3057a31822a2",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "tj1IVwQWko60mtQB",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "806f1553-6b37-4189-94cb-1c4caa1cdbd8",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        0
+      ],
+      "id": "da366b83-9dd8-461b-ae2b-c86a4182ea15",
+      "name": "Wisdom Sage",
+      "webhookId": "806f1553-6b37-4189-94cb-1c4caa1cdbd8"
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://44.197.151.60:3000/api/session",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "{\n  \"username\": \"nagaraj.jm@techkasetti.com\",\n  \"password\": \"a-iR435_Sq2!XpL\"\n}\n"
+      },
+      "name": "Metabase Login",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        0,
+        240
+      ],
+      "id": "243336f6-3cc6-4637-bcee-f43351add958",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "requestMethod": "PUT",
+        "url": "http://44.197.151.60:3000/api/dashboard/2/cards",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": " {\n    \"cards\": [\n      {\n        \"id\": -1,\n        \"card_id\": 47,\n        \"dashboard_tab_id\": null,\n        \"action_id\": null,\n        \"row\": 0,\n        \"col\": 3,\n        \"size_x\": 30,\n        \"size_y\": 9,\n        \"series\": [],\n        \"visualization_settings\": {},\n        \"parameter_mappings\": []\n      }\n    ],\n    \"tabs\": []\n  }",
+        "headerParametersJson": "={\n  \"Content-Type\": \"application/json\",\n  \"X-Metabase-Session\": \"{{ $json.id }}\"\n}\n"
+      },
+      "name": "Metabase Login1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        200,
+        240
+      ],
+      "id": "ddd5a647-f755-4123-8ee5-7f64a9dfcc72",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://98.85.30.170/api/v1/chat.postMessage",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Auth-Token",
+              "value": "dhpsCcj8y6CP76yECm-4tR9AQkOd6xH8sd-cyW-n9Wi"
+            },
+            {
+              "name": "X-User-Id",
+              "value": "d4nDPys7Bais5d6Bi"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "#general"
+            },
+            {
+              "name": "text",
+              "value": "Report successfully generated in the Metabase"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        240
+      ],
+      "id": "9a90a737-93ee-4229-9762-3f36e90ce0a6",
+      "name": "Response to Rocket Chat"
+    },
+    {
+      "parameters": {
+        "channel": "#general",
+        "text": "Report successfully generated in the Metabase",
+        "options": {},
+        "attachments": []
+      },
+      "type": "n8n-nodes-base.rocketchat",
+      "typeVersion": 1,
+      "position": [
+        60,
+        0
+      ],
+      "id": "f1340b47-2050-490c-8743-984cbaafe46d",
+      "name": "RocketChat",
+      "credentials": {
+        "rocketchatApi": {
+          "id": "BB5DgjLqrquMtRjH",
+          "name": "Rocket account"
+        }
+      },
+      "disabled": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Snowflake1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Snowflake2": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wisdom Sage": {
+      "main": [
+        [
+          {
+            "node": "Metabase Login",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Metabase Login": {
+      "main": [
+        [
+          {
+            "node": "Metabase Login1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Metabase Login1": {
+      "main": [
+        [
+          {
+            "node": "Response to Rocket Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Response to Rocket Chat": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5340f9e9-7204-45cf-a7cc-41d144a0bc27",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dd98a6e9c4d6d6637c592f7b142c200f96537e89aebdd6b513bee838551cea65"
+  },
+  "id": "hk3AzJru1VBJpYeD",
+  "tags": []
+}
