@@ -1,0 +1,311 @@
+{
+  "name": "Redirecting Mail",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -80,
+        80
+      ],
+      "id": "9946f395-6130-4511-bde8-b4f8b18ba911",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ZXjOYgKe7kO1tpWO",
+          "name": "Gmail account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "get the response from the http response tool and  give only the complaints,email and tags seperately",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        120,
+        80
+      ],
+      "id": "02e889de-60a6-42c1-92b7-ad0f7e5f9462",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "toolDescription": "get all the details from the response",
+        "method": "POST",
+        "url": "https://a551-2401-4900-8813-6df5-19a1-3c71-6ec-6263.ngrok-free.app/submit_complaints",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"complaints\": [\n    \"{{ $json.snippet }}\"\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        320
+      ],
+      "id": "c3b2e219-db11-4a04-8cf0-e476bf5758f9",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        80,
+        320
+      ],
+      "id": "fa9ad2c3-91b6-4cea-aa2e-b72ebb616ce5",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "dHJpwysr6ai8g4fK",
+          "name": "Groq account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1) Grab the raw string\nconst raw = $input.first().json.output;\n\n// 2) Normalize any “\\n” escapes into real newlines\nconst normalized = raw.replace(/\\\\n/g, '\\n');\n\n// 3) Split into lines\nconst lines = normalized.split(/\\r?\\n/);\n\n// 4) Initialize variables\nlet complaint = '';\nlet email = '';\nlet tags = '';\n\n// 5) Iterate over each line and extract data based on labels\nfor (const line of lines) {\n  if (line.toLowerCase().startsWith('complaints:')) {\n    complaint = line.replace(/^Complaints:\\s*/i, '').trim();\n  } else if (line.toLowerCase().startsWith('email:')) {\n    email = line.replace(/^Email:\\s*/i, '').trim();\n  } else if (line.toLowerCase().startsWith('tags:')) {\n    tags = line.replace(/^Tags:\\s*/i, '').trim();\n  }\n}\n\n// 6) Emit as separate JSON fields\nreturn [\n  {\n    json: {\n      complaint,\n      tags,\n      email,\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        80
+      ],
+      "id": "560be7e8-3004-4973-b613-4c29d417a919",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=CALL GET_SQL_FROM_QUESTION(\n  '{{ $json.message.text }}');"
+      },
+      "type": "n8n-nodes-base.snowflakeTool",
+      "typeVersion": 1,
+      "position": [
+        240,
+        320
+      ],
+      "id": "421a45f7-051d-408c-a6bd-cc2cd7a79674",
+      "name": "Snowflake",
+      "credentials": {
+        "snowflake": {
+          "id": "nOe9keYDYLWfwaOH",
+          "name": "DREMIO"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "=Issue Raised On {{ new Date().toLocaleString() }} With Regarding To {{ $json.tags }}",
+        "emailType": "text",
+        "message": "={{ $json.complaint }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        700,
+        80
+      ],
+      "id": "2a7ab23c-3be2-4803-82e5-36ab50944b22",
+      "name": "Gmail",
+      "webhookId": "df84d660-7c75-472d-a16b-45e95a585d5a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ZXjOYgKe7kO1tpWO",
+          "name": "Gmail account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $json.id }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -100,
+        -180
+      ],
+      "id": "e7d72a24-9156-430e-9b7a-91bca35ea82b",
+      "name": "Gmail2",
+      "webhookId": "10849a29-0184-4099-ad76-ecccd8b7767c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ZXjOYgKe7kO1tpWO",
+          "name": "Gmail account 4"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $json.id }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        920,
+        80
+      ],
+      "id": "f9d24c27-77e4-4b82-9612-53b1133e9a80",
+      "name": "Gmail1",
+      "webhookId": "10849a29-0184-4099-ad76-ecccd8b7767c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ZXjOYgKe7kO1tpWO",
+          "name": "Gmail account 4"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "resource": "case",
+        "type": "General",
+        "additionalFields": {
+          "customFieldsUi": {
+            "customFieldsValues": [
+              {
+                "fieldId": "Service_Department__c",
+                "value": "={{ $json.tags }}"
+              }
+            ]
+          },
+          "description": "={{ $json.complaint }}",
+          "subject": "={{ $('Gmail Trigger').item.json.Subject }} Raised On {{ new Date().toLocaleString() }}\n"
+        }
+      },
+      "type": "n8n-nodes-base.salesforce",
+      "typeVersion": 1,
+      "position": [
+        100,
+        -160
+      ],
+      "id": "18ced346-11dc-4583-be93-569f7ed92516",
+      "name": "Salesforce1",
+      "credentials": {
+        "salesforceOAuth2Api": {
+          "id": "m7jmPkYeIJKHSXAr",
+          "name": "Salesforce account"
+        }
+      },
+      "disabled": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Snowflake": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "main": [
+        []
+      ]
+    },
+    "Gmail2": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "86974a03-565f-4b6b-85d4-01a2bb89d747",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dd98a6e9c4d6d6637c592f7b142c200f96537e89aebdd6b513bee838551cea65"
+  },
+  "id": "YVDo0Pyri9oVRDZe",
+  "tags": []
+}

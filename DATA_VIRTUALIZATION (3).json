@@ -1,0 +1,450 @@
+{
+  "name": "DATA VIRTUALIZATION",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "806f1553-6b37-4189-94cb-1c4caa1cdbd8",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -380,
+        80
+      ],
+      "id": "da366b83-9dd8-461b-ae2b-c86a4182ea15",
+      "name": "Wisdom Sage",
+      "webhookId": "806f1553-6b37-4189-94cb-1c4caa1cdbd8"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://98.85.30.170/api/v1/chat.postMessage",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Auth-Token",
+              "value": "dhpsCcj8y6CP76yECm-4tR9AQkOd6xH8sd-cyW-n9Wi"
+            },
+            {
+              "name": "X-User-Id",
+              "value": "d4nDPys7Bais5d6Bi"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "#general"
+            },
+            {
+              "name": "text",
+              "value": "Your report has been successfully generated in Metabase."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1380,
+        80
+      ],
+      "id": "9a90a737-93ee-4229-9762-3f36e90ce0a6",
+      "name": "Response to Rocket Chat"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CALL GET_SQL_FROM_QUESTION_pin(\n  '{{ $('Wisdom Sage').item.json.body.text }}'\n);"
+      },
+      "type": "n8n-nodes-base.snowflake",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        80
+      ],
+      "id": "bf4a4129-293d-4101-a5e9-e64e58b65a62",
+      "name": "Snowflake",
+      "credentials": {
+        "snowflake": {
+          "id": "nOe9keYDYLWfwaOH",
+          "name": "DREMIO"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://98.85.30.170/api/v1/chat.postMessage",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Auth-Token",
+              "value": "dhpsCcj8y6CP76yECm-4tR9AQkOd6xH8sd-cyW-n9Wi"
+            },
+            {
+              "name": "X-User-Id",
+              "value": "d4nDPys7Bais5d6Bi"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "#general"
+            },
+            {
+              "name": "text",
+              "value": "Generating your report..."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -220,
+        80
+      ],
+      "id": "f27ff55e-b9a5-4fe2-b0f3-ed7dbfc51957",
+      "name": "Response to Rocket Chat1"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.GET_SQL_FROM_QUESTION_PIN }}",
+                    "rightValue": "/* No SQL statement generated */",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "288b748e-78da-410a-b4ba-17d4d011565b"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Query not generated"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9638d74e-ab06-4b89-aad0-352f00b75c9d",
+                    "leftValue": "={{ $json.GET_SQL_FROM_QUESTION_PIN }}",
+                    "rightValue": "/* No SQL statement generated */",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "query generated"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        400,
+        20
+      ],
+      "id": "d9247b72-7da0-43c2-80b7-1cd96cd7a452",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://98.85.30.170/api/v1/chat.postMessage",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Auth-Token",
+              "value": "dhpsCcj8y6CP76yECm-4tR9AQkOd6xH8sd-cyW-n9Wi"
+            },
+            {
+              "name": "X-User-Id",
+              "value": "d4nDPys7Bais5d6Bi"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "#general"
+            },
+            {
+              "name": "text",
+              "value": "An error occurred. Please refine your request and try again."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        -160
+      ],
+      "id": "064c1517-17b9-449e-9078-8344c7bfdd34",
+      "name": "Response to Rocket Chat2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.GET_SQL_FROM_QUESTION_PIN }}   from this query wherever the \\n appearce replace it with \\\\n and just return the query back don't need to add anything else and remember don't add any comments like sql at the start",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        60,
+        -40
+      ],
+      "id": "c3102b3e-40cb-4918-8ad4-fa780f452d80",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        80,
+        260
+      ],
+      "id": "71ddf949-874d-45b3-9af0-9252a53a7c16",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "tj1IVwQWko60mtQB",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://44.197.151.60:3000/api/session",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "{\n  \"username\": \"nagaraj.jm@techkasetti.com\",\n  \"password\": \"a-iR435_Sq2!XpL\"\n}\n"
+      },
+      "name": "Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        660,
+        60
+      ],
+      "id": "243336f6-3cc6-4637-bcee-f43351add958"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://44.197.151.60:3000/api/card",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Metabase-Session",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"Dynamic SQL Query\",\n  \"dataset_query\": {\n    \"database\": 2,\n    \"native\": {\n      \"query\": \"SELECT getaws_dremio_data('{{ $('AI Agent').item.json.output }}') AS result;\"\n    },\n    \"type\": \"native\"\n  },\n  \"display\": \"table\",\n  \"visualization_settings\": {}\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        60
+      ],
+      "id": "04a045ef-86a1-4574-991b-99dc5132a6e1",
+      "name": "Card1"
+    },
+    {
+      "parameters": {
+        "requestMethod": "PUT",
+        "url": "http://44.197.151.60:3000/api/dashboard/2/cards",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": " {\n    \"cards\": [\n      {\n        \"id\": -1,\n        \"card_id\": 47,\n        \"dashboard_tab_id\": null,\n        \"action_id\": null,\n        \"row\": 0,\n        \"col\": 3,\n        \"size_x\": 30,\n        \"size_y\": 9,\n        \"series\": [],\n        \"visualization_settings\": {},\n        \"parameter_mappings\": []\n      }\n    ],\n    \"tabs\": []\n  }",
+        "headerParametersJson": "={\n  \"Content-Type\": \"application/json\",\n  \"X-Metabase-Session\": \"{{ $json.id }}\"\n}\n"
+      },
+      "name": "Dashboard",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1140,
+        80
+      ],
+      "id": "ddd5a647-f755-4123-8ee5-7f64a9dfcc72"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Wisdom Sage": {
+      "main": [
+        [
+          {
+            "node": "Response to Rocket Chat1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Response to Rocket Chat": {
+      "main": [
+        []
+      ]
+    },
+    "Snowflake": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Response to Rocket Chat1": {
+      "main": [
+        [
+          {
+            "node": "Snowflake",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Response to Rocket Chat2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token": {
+      "main": [
+        [
+          {
+            "node": "Card1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dashboard": {
+      "main": [
+        [
+          {
+            "node": "Response to Rocket Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "94616f53-0489-4a90-b380-662d1eb1867d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dd98a6e9c4d6d6637c592f7b142c200f96537e89aebdd6b513bee838551cea65"
+  },
+  "id": "hk3AzJru1VBJpYeD",
+  "tags": []
+}

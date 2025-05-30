@@ -1,0 +1,261 @@
+{
+  "name": "gmail analyzer",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        40,
+        0
+      ],
+      "id": "7584e53f-8aa8-4f25-b015-420f0db55f68",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ZXjOYgKe7kO1tpWO",
+          "name": "Gmail account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        280,
+        220
+      ],
+      "id": "c129da15-a34f-43ff-b485-2dbdc9d9bc46",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "tj1IVwQWko60mtQB",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=get the message from the gmail and generate the prompt for using the open ai from this mail, {{ $json.snippet }}\ni want prompt like this... just be it in lower case axcept product name\nprovide me salesforce product quantity from odo product name [PRODUCT_NAME]\nhere product name should fetch from that email snippet\n\ndont give any other things give me only prompt. in one line.\n\n\n\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        280,
+        0
+      ],
+      "id": "237ca0ad-672a-4846-ba3a-44e292cb13e1",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CALL GET_SQL_FROM_QUESTION(\n  '{{ $('AI Agent1').item.json.output }}');"
+      },
+      "type": "n8n-nodes-base.snowflake",
+      "typeVersion": 1,
+      "position": [
+        840,
+        0
+      ],
+      "id": "b769c35b-9667-4829-a165-0ec4efd70477",
+      "name": "Snowflake2",
+      "credentials": {
+        "snowflake": {
+          "id": "nOe9keYDYLWfwaOH",
+          "name": "DREMIO"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CALL GET_SQL_FROM_QUESTION(\n  '{{ $json.output }}');"
+      },
+      "type": "n8n-nodes-base.snowflakeTool",
+      "typeVersion": 1,
+      "position": [
+        500,
+        220
+      ],
+      "id": "18bc6e35-58e8-469b-a03c-ee79d82e2404",
+      "name": "Snowflake1",
+      "credentials": {
+        "snowflake": {
+          "id": "nOe9keYDYLWfwaOH",
+          "name": "DREMIO"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CALL GET_SQL_FROM_QUESTION_pin(\n  '{{ $('AI Agent1').item.json.output }}\" party_identification_id\": \"{{ $json.GET_SQL_FROM_QUESTION }}\n'\n);"
+      },
+      "type": "n8n-nodes-base.snowflake",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "d57a3f95-16e1-4ad9-a396-7666f3386df9",
+      "name": "Snowflake4",
+      "credentials": {
+        "snowflake": {
+          "id": "nOe9keYDYLWfwaOH",
+          "name": "DREMIO"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}",
+        "emailType": "text",
+        "message": "=Dear Team,\n\nThank you for your message.\n\nThe current product quantity for the product {{ $('Code1').item.json.productName }} is {{ $json.GET_SQL_FROM_QUESTION_PIN }}.\n\nPlease let me know if you need any further assistance.\n\nBest regards,",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1380,
+        0
+      ],
+      "id": "8e1aff97-01a8-42a9-95da-783357552573",
+      "name": "Gmail",
+      "webhookId": "efa9bd9a-ff29-45fd-8740-c29e0f33ea5b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ZXjOYgKe7kO1tpWO",
+          "name": "Gmail account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputString = $input.first().json.output;\n\n// Match \"product name\" followed by the product name (until end of string or next known token)\nconst match = inputString.match(/product name (.+)$/i);\n\nconst productName = match ? match[1].trim() : null;\n\nreturn [\n  {\n    json: {\n      productName: productName\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        0
+      ],
+      "id": "b1635726-8bbf-4c2c-8455-fdce798e8ba7",
+      "name": "Code1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Snowflake1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Snowflake2": {
+      "main": [
+        [
+          {
+            "node": "Snowflake4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Snowflake4": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Snowflake2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "de934499-4794-4341-933f-7b79241f5962",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dd98a6e9c4d6d6637c592f7b142c200f96537e89aebdd6b513bee838551cea65"
+  },
+  "id": "GVwnGO0YqBcuih76",
+  "tags": []
+}
